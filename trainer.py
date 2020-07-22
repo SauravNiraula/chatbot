@@ -46,6 +46,8 @@ class Main_trainer:
                     stemmed_word = stemmer.stem(word)
                     lemmatized_word = lemmatizer.lemmatize(stemmed_word, pos="a")
                     temp.append(lemmatized_word.lower())
+                
+            temp = list(set(temp))
 
             self.refined_questions.append(temp)
 
@@ -116,18 +118,19 @@ class Main_trainer:
                 temp.append(self.mapping_dict[word])
             except:
                 pass
+        temp = list(set(temp))
 
         similarity_list = []
 
         for each in self.question_vector:
-            similarity_list.append(self.cosine_similarity(each, temp))
+            similarity_list.append(self.get_similarity(each, temp))
 
-        max_score = max(similarity_list)
+        min_score = min(similarity_list)
 
         temp = []
         
         for index, i in enumerate(similarity_list):
-            if i == max_score:
+            if i == min_score:
                 temp.append(index)
 
         answer_index = random.choice(temp)
@@ -135,25 +138,19 @@ class Main_trainer:
         return self.answers[answer_index]
 
     
-    def cosine_similarity(self, list_a, list_b):
+    def get_similarity(self, list_a, list_b):
 
         a = Counter(list_a)
         b = Counter(list_b)
 
         c = set(a).union(b)
-        dot_product = sum(a.get(i, 0) * b.get(i, 0) for i in c )
 
-        mag_a = math.sqrt(sum(a.get(i, 0)**2 for i in c ))
-        mag_b = math.sqrt(sum(b.get(i, 0)**2 for i in c ))
+        vector_a = [ a.get(i, 0) for i in c ]
+        vector_b = [ b.get(i, 0) for i in c ]
 
-        try:
-            temp = dot_product / ( mag_a * mag_b )
-        except:
-            temp = 0
+        sum_of_vector = sum( (vector_a[i] - vector_b[i])**2 for i in range(len(c)))
 
-        return temp
-
-
+        return math.sqrt(sum_of_vector)
 
 if __name__ == "__main__":
     
