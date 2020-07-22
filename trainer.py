@@ -27,6 +27,7 @@ class Main_trainer:
         self.tokenized_questions = None
         self.refined_questions = []
         self.question_vector = []
+        self.one_d_vectors = []
         self.mapping_dict = {}
 
     def tokenize(self):
@@ -62,10 +63,11 @@ class Main_trainer:
             temp = set(question)
             temp_list.extend(temp)
 
-        temp_list = set(temp_list)
+        temp_list = list(set(temp_list))
         
         for index, each in enumerate(temp_list):
             self.mapping_dict[each] = index
+            self.one_d_vectors.append(index)
 
         print("creating mapping list of questions finished")
 
@@ -79,8 +81,7 @@ class Main_trainer:
             
             self.question_vector.append(temp)
 
-        print("converting to vector finished") 
-
+        print("converting to vector finished")
 
     def train(self):
         print("training process started!")
@@ -142,8 +143,7 @@ class Main_trainer:
 
         a = Counter(list_a)
         b = Counter(list_b)
-
-        c = set(a).union(b)
+        c = self.one_d_vectors
 
         vector_a = [ a.get(i, 0) for i in c ]
         vector_b = [ b.get(i, 0) for i in c ]
