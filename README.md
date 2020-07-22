@@ -1,6 +1,6 @@
-### ChatBot
+# ChatBot
 
 ## Required Packages:
     1. NLTK
 
-# for testing purpose please type "python test.py"
+### for testing purpose please type "python test.py"
