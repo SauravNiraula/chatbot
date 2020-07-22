@@ -1,9 +1,9 @@
 import nltk
 from nltk.stem import WordNetLemmatizer, PorterStemmer
+
 nltk.download('punkt')
 nltk.download('wordnet')
 
-import numpy as np
 import pickle
 import os
 
@@ -78,6 +78,13 @@ class Main_trainer:
         print("converting to vector finished") 
         print("training process completed!")
 
+
+    def train(self):
+        self.tokenize()
+        self.stem()
+        self.create_word_mapping_dict()
+        self.convert_to_vector()
+
     def save_model(self):
         with open("model", 'wb') as file:
             pickle.dump(self, file)
@@ -110,13 +117,17 @@ class Main_trainer:
         
         for each in self.question_vector:
             similarity_value = 0
-            for i in temp:
-                if i in each:
+            dissimilarity_value = 0
+            for i in each:
+                if i in temp:
                     similarity_value += 1;
+                else:
+                    dissimilarity_value += 0.0001;
 
-            score_list.append(similarity_value)
+            score_list.append(similarity_value - dissimilarity_value)
 
         max_score = max(score_list)
+        # print(score_list)
 
         index_of_max_score = score_list.index(max_score)
 
