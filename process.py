@@ -10,28 +10,32 @@ def open_file(path):
 
     return doc
 
-def process_txt(doc):
+def process_txt(*args):
     questions = []
     answers = []
 
     i = 0
-    while True:
-        line = doc.readline()
 
-        if line != '':
-            if i % 2 == 0:
-                questions.append(line)
+    for doc in args:
+
+        while True:
+            line = doc.readline()
+
+            if line != '':
+                if i % 2 == 0:
+                    questions.append(line)
+                else:
+                    answers.append(line)
+
+                i += 1
+                
             else:
-                answers.append(line)
-
-            i += 1
-            
-        else:
-            break
+                break
     
     return questions, answers
 
 if __name__ == "__main__":
 
-    doc = open_file("dataset.txt")
-    print(process_txt(doc))
+    main_doc = open_file("/datasets/dataset.txt")
+    ai_doc = open_file("datasets/ai.yml")
+    print(process_txt(main_doc, ai_doc))

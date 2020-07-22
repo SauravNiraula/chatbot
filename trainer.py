@@ -6,6 +6,7 @@ nltk.download('wordnet')
 
 import pickle
 import os
+import random
 
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
@@ -76,14 +77,18 @@ class Main_trainer:
             self.question_vector.append(temp)
 
         print("converting to vector finished") 
-        print("training process completed!")
 
 
     def train(self):
+        print("training process started!")
+        
         self.tokenize()
         self.stem()
         self.create_word_mapping_dict()
         self.convert_to_vector()
+
+        print("training process completed!")
+
 
     def save_model(self):
         with open("model", 'wb') as file:
@@ -122,14 +127,17 @@ class Main_trainer:
                 if i in temp:
                     similarity_value += 1;
                 else:
-                    dissimilarity_value += 0.0001;
+                    dissimilarity_value += 0.00001;
 
             score_list.append(similarity_value - dissimilarity_value)
 
         max_score = max(score_list)
-        # print(score_list)
+        
+        index_list = [ index for index, i in enumerate(score_list) if i == max_score ]
+        
+        index_of_max_score = random.choice(index_list)
 
-        index_of_max_score = score_list.index(max_score)
+        # print(index_list, index_of_max_score)
 
         return self.answers[index_of_max_score]
 
