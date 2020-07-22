@@ -7,6 +7,8 @@ nltk.download('wordnet')
 import pickle
 import os
 import random
+import math
+from collections import Counter
 
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
@@ -44,7 +46,6 @@ class Main_trainer:
                     stemmed_word = stemmer.stem(word)
                     lemmatized_word = lemmatizer.lemmatize(stemmed_word, pos="a")
                     temp.append(lemmatized_word.lower())
-                temp = list(set(temp))
 
             self.refined_questions.append(temp)
 
@@ -114,32 +115,43 @@ class Main_trainer:
             try:
                 temp.append(self.mapping_dict[word])
             except:
-                temp.append(-1)
+                pass
 
-        temp = list(set(temp))
+        similarity_list = []
 
-        score_list = []
-        
         for each in self.question_vector:
-            similarity_value = 0
-            dissimilarity_value = 0
-            for i in each:
-                if i in temp:
-                    similarity_value += 1;
-                else:
-                    dissimilarity_value += 0.00001;
+            similarity_list.append(self.cosine_similarity(each, temp))
 
-            score_list.append(similarity_value - dissimilarity_value)
+        max_score = max(similarity_list)
 
-        max_score = max(score_list)
+        temp = []
         
-        index_list = [ index for index, i in enumerate(score_list) if i == max_score ]
-        
-        index_of_max_score = random.choice(index_list)
+        for index, i in enumerate(similarity_list):
+            if i == max_score:
+                temp.append(index)
 
-        # print(index_list, index_of_max_score)
+        answer_index = random.choice(temp)
 
-        return self.answers[index_of_max_score]
+        return self.answers[answer_index]
+
+    
+    def cosine_similarity(self, list_a, list_b):
+
+        a = Counter(list_a)
+        b = Counter(list_b)
+
+        c = set(a).union(b)
+        dot_product = sum(a.get(i, 0) * b.get(i, 0) for i in c )
+
+        mag_a = math.sqrt(sum(a.get(i, 0)**2 for i in c ))
+        mag_b = math.sqrt(sum(b.get(i, 0)**2 for i in c ))
+
+        try:
+            temp = dot_product / ( mag_a * mag_b )
+        except:
+            temp = 0
+
+        return temp
 
 
 
