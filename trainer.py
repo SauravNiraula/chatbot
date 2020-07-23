@@ -4,6 +4,8 @@ from nltk.stem import WordNetLemmatizer, PorterStemmer
 nltk.download('punkt')
 nltk.download('wordnet')
 
+import tensorflow as tf
+
 import pickle
 import os
 import random
@@ -24,10 +26,15 @@ class Main_trainer:
 
         self.questions = questions
         self.answers = answers
+        self.answer_vector = []
         self.tokenized_questions = None
         self.refined_questions = []
         self.question_vector = []
         self.mapping_dict = {}
+        self.oned_list = []
+        self.final_questions = []
+
+        self.model = None
 
     def tokenize(self):
         print("tokenizing")
@@ -64,6 +71,7 @@ class Main_trainer:
         
         for index, each in enumerate(temp_list):
             self.mapping_dict[each] = index
+            self.oned_list.append(index)
 
         print("creating mapping list of questions finished")
 
@@ -77,7 +85,43 @@ class Main_trainer:
             
             self.question_vector.append(temp)
 
-        print("converting to vector finished") 
+        print("converting to vector finished")
+
+
+    def get_final_data(self):
+        print("Getting final data")
+
+        for each in self.question_vector:
+            temp = []
+            for i in self.oned_list:
+                t = 0
+                if i in each:
+                    t = 1
+                temp.append(t)
+
+            self.final_questions.append(temp)
+
+        self.answer_vector = [i for i in  range(len(self.question_vector))]
+
+        print("Getting final data finished")
+
+    
+
+    def tensorflow_stuffs(self):
+        self.model = tf.keras.Sequential([
+            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(50),
+            tf.keras.layers.Dense(len(self.answer_vector))
+        ])
+
+        self.model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+        self.model.fit(self.final_questions, self.answer_vector, epochs=100)
+
+        self.probability_model = tf.keras.Sequential([self.model, 
+                                         tf.keras.layers.Softmax()])
 
 
     def train(self):
@@ -87,6 +131,8 @@ class Main_trainer:
         self.stem()
         self.create_word_mapping_dict()
         self.convert_to_vector()
+        self.get_final_data()
+        self.tensorflow_stuffs()
 
         print("training process completed!")
 
@@ -111,66 +157,42 @@ class Main_trainer:
         words = nltk.word_tokenize(question.lower())
         refined_question = [ lemmatizer.lemmatize(stemmer.stem(word)) for word in words ]
         temp = []
+        final = []
         for word in refined_question:
             try:
                 temp.append(self.mapping_dict[word])
             except:
                 pass
 
-        similarity_list = []
+        for i in self.oned_list:
+            t = 0
+            if i in temp:
+                t = 1
+            final.append(t)
 
-        for each in self.question_vector:
-            similarity_list.append(self.cosine_similarity(each, temp))
+        answer = self.probability_model.predict([final])
 
-        max_score = max(similarity_list)
+        answer = list(answer[0])
+
+        max_answer = max(answer)
 
         temp = []
-        
-        for index, i in enumerate(similarity_list):
-            if i == max_score:
+
+        for index, i in enumerate(answer):
+            if i == max_answer:
                 temp.append(index)
 
-        answer_index = random.choice(temp)
+        index_max = random.choice(temp)
 
-        return self.answers[answer_index]
-
-    
-    def cosine_similarity(self, list_a, list_b):
-
-        a = Counter(list_a)
-        b = Counter(list_b)
-
-        c = set(a).union(b)
-        dot_product = sum(a.get(i, 0) * b.get(i, 0) for i in c )
-
-        mag_a = math.sqrt(sum(a.get(i, 0)**2 for i in c ))
-        mag_b = math.sqrt(sum(b.get(i, 0)**2 for i in c ))
-
-        try:
-            temp = dot_product / ( mag_a * mag_b )
-        except:
-            temp = 0
-
-        return temp
-
+        return self.answers[index_max]
 
 
 if __name__ == "__main__":
     
-    # trainer = Main_trainer(["", "Hello", "hi", "Hello, how are you?", "are you fine?", "how you doing", "are you happy?"], ["sorry your question doesnot match any questions in my model!", "Hi", "Hello", "I'm fine", "yes", "Good", "I am happy aslong as you are :)"])
-    # trainer.tokenize()
-    # # print(trainer.tokenized_questions)
-    # trainer.stem()
-    # # print(trainer.refined_questions)
-    # trainer.create_word_mapping_dict()
+    trainer = Main_trainer(["", "Hello", "hi", "Hello, how are you?", "are you fine?", "how you doing", "are you happy?"], ["sorry your question doesnot match any questions in my model!", "Hi", "Hello", "I'm fine", "yes", "Good", "I am happy aslong as you are :)"])
     
-    # trainer.convert_to_vector()
+    trainer.train()
 
-    # trainer.save_model()
-    trainer = Main_trainer()
-
-    model = trainer.load_model()
-    
     while True:
-        answer = model.ask(input("randomuser > "))
-        print(answer + "\n")
+        answer = trainer.ask(input("You > "))
+        print(answer)
